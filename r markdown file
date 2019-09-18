@@ -1,0 +1,197 @@
+---
+title: "DASHBOAD"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(plotly)
+library(ggplot2)
+library(quantmod)
+library(dplyr)
+iotausd=read.csv(choose.files(),sep = ",",header = TRUE)
+btcusd=read.csv(choose.files(),sep = ",",header = TRUE)
+iotausd$Date=as.Date(iotausd$Date)
+btcusd$Date=as.Date(btcusd$Date)
+```
+
+
+IOTA COIN
+=======================================================================
+Row
+-----------------------------------------------------------------------
+
+### IOTA CANDEL STICKCHART
+
+```{r}
+p <- iotausd %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = iotausd$Open, close = iotausd$Price,
+          high = iotausd$High, low = iotausd$Low) %>%
+  layout(title = "IOTA Candlestick Chart")
+
+l=p%>%add_lines(x=~Date,y=~iotausd$Open,inherit = FALSE)%>%
+  layout(yaxis=list(title="PRICE IN USD"))
+l
+
+```
+
+
+MAX MIN IOTA COIN
+=======================================================================
+Row
+-----------------------------------------------------------------------
+
+### MAX IOTA PRICE MONTH
+```{r}
+a3=filter(iotausd,Date>="2017-12-01" & Date<="2018-01-01")
+a<- a3 %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = ~Open, close = ~Price,
+          high = ~High, low = ~Low) %>%
+  layout(title = "Maximun price of IOTA",yaxis=list(title="PRICE IN USD"),
+          xaxis = list(rangeslider = list(visible = F)))
+a
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### MIN IOTA PRICE MONTH
+```{r}
+a6=filter(iotausd,Date>="2017-07-01" & Date<="2017-08-01")
+pu<- a6 %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = ~Open, close = ~Price,
+          high = ~High, low = ~Low) %>%
+  layout(title = "Minimum Price of IOTA ",yaxis=list(title="PRICE IN USD"),xaxis = list(rangeslider = list(visible = F)))
+pu
+```
+
+
+
+BITCOIN
+=======================================================================
+Row
+-----------------------------------------------------------------------
+
+### BITCOIN CANDEL STICKCHART
+
+```{r}
+o <- btcusd %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = btcusd$Open, close = btcusd$Price,
+          high = btcusd$High, low = btcusd$Low) %>%
+  layout(title = "BTC Candlestick Chart")
+
+t=o%>%add_lines(x=~Date,y=btcusd$Open,inherit = FALSE)%>%
+  layout(yaxis=list(title="PRICE IN USD"))
+t
+
+
+```
+
+
+
+MAX MIN BTC COIN
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Max price month of BTC
+```{r}
+b3=filter(btcusd,Date>="2017-12-01" & Date<="2018-01-01")
+y<- b3 %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = ~Open, close = ~Price,
+          high = ~High, low = ~Low) %>%
+  layout(title = "Maximun price of BTC",yaxis=list(title="PRICE IN USD"),xaxis = list(rangeslider = list(visible = F)))
+y
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+###MIn price month of BTC
+```{r}
+b6=filter(btcusd,Date>="2017-07-01" & Date<="2017-08-01")
+g<- b6 %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = ~Open, close = ~Price,
+          high = ~High, low = ~Low) %>%
+  layout(title = "Minimum Price of BTC ",yaxis=list(title="PRICE IN USD"),xaxis = list(rangeslider = list(visible = F)))
+g
+
+
+```
+
+TIME SERISE COMPARISON
+=======================================================================
+Row
+-----------------------------------------------------------------------
+
+### IOTA CHART
+
+```{r}
+PRICE_IN_USD=iotausd$Price
+DATE=iotausd$Date
+p1=plot_ly(x=DATE,y=PRICE_IN_USD,mode = 'lines',type = 'scatter', 
+           line = list(color ='red', width = 1.5),name = "IOTA",text=paste("IOTA"))%>%
+  layout(title="IOTA USD",yaxis=list(title="PRICE IN USD"),
+         xaxis=list(title="DATE"),showlegend=TRUE)
+p1
+
+```
+
+Row 
+-----------------------------------------------------------------------
+
+### BTC CHART
+
+```{r}
+p2=plot_ly(x=btcusd$Date,y=btcusd$Price,mode='lines',type = 'scatter',name = "BTC",
+           text=paste("BTC"))%>% layout(title="BTC USD",xaxis=list(title="DATE")
+                                        ,yaxis=list(title="PRICE IN USD"),showlegend=TRUE)
+p2
+```
+
+
+
+PRICE VS VOLUME IN MARKET
+=======================================================================
+Row
+-----------------------------------------------------------------------
+
+### PRICE VS VOLUME IN MARKET CHART
+
+```{r}
+plot_ly(x=iotausd$Price,y=iotausd$Vol,z=iotausd$Date,type = "scatter3d",mode='markers',
+         marker = list(size = 7,color = iotausd$Vol,
+                       colorscale = c('#FFE1A1', '#683531'))) %>%
+  layout(title = 'Price in USD VS Volume',
+         scene=list(yaxis = list(title='VOLUME'),
+         xaxis = list(title='Price in USD'),
+         zaxis=list(title='date')))
+```
+
+
+LINEAR MODEL
+=======================================================================
+Column
+-----------------------------------------------------------------------
+
+### linear model
+```{r}
+z=ggplot(data =iotausd,aes(x=Price+Open,y=High))+geom_point(shape=1)+
+  geom_smooth(method = "lm",col="dodgerblue3")+
+  ggtitle("line model")
+z
+ggplotly(z)
+
+```
