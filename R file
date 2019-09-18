@@ -1,0 +1,303 @@
+
+#######IMPORTING THE DATASET##############
+iotausd=read.csv(choose.files(),sep = ",",header = TRUE)
+btcusd=read.csv(choose.files(),sep = ",",header = TRUE)
+
+
+
+####IOTA COIN IS NOT BASE ON BLOCKCHAIN  IT IS BASED ON TANGLE 
+###BTC IS BASED ON BLOCKCHAIN TECHNOLOGY
+##BUT iota is dependent on btc alot
+
+
+##LET SEE HOW
+
+View(iotausd)
+str(iotausd)
+###### Creating function to clean the datasets
+convertcurrency=function(var){
+  new_var=gsub(',','',var)
+  return(as.numeric(new_var))
+}
+convertvolume=function(var){
+  new_var=gsub('M','',var)
+  return(as.numeric(new_var))
+} 
+convertvolume1=function(var){
+  new_var=gsub('K','',var)
+  return(as.numeric(new_var))
+} 
+
+convertpercent=function(var){
+  new_var=gsub("%",'',var)
+  new_var=as.numeric(new_var)
+  new_var=(new_var)/100
+  return((new_var))
+}
+
+
+###Converting the DATE column in IOTA dataset which is in factor to date
+library(lubridate)
+dates <- parse_date_time(x = as.character(iotausd$ï..Date), orders ="b/d/Y")
+iotausd$ï..Date<- dates
+iotausd$ï..Date
+
+####Changing the name of the column
+names(iotausd)[1]<-"Date"
+iotausd$Date=as.Date(iotausd$Date)
+iotausd$Date
+names(iotausd)[6]<-"Vol"
+iotausd$Vol
+names(iotausd)[7]<-"Change%"
+iotausd$`Change%`
+str(iotausd)
+View(iotausd1)
+iotausd1=iotausd
+
+####Converting the change% and volume to numeric by help to functions which are in factor
+iotausd1$`Change%`=convertpercent(iotausd1[,7])
+iotausd1
+iotausd1$Vol=convertvolume(iotausd1[,6])
+iotausd1
+iotausd=iotausd1
+str(iotausd)
+summary(iotausd)
+
+
+##SAME PROCEDURE FOR BTC DATASETS
+View(btcusd)
+str(btcusd)
+dates <- parse_date_time(x = as.character(btcusd$ï..Date), orders ="b/d/Y")
+btcusd$ï..Date<- dates
+btcusd$ï..Date
+names(btcusd)[1]<-"Date"
+btcusd$Date=as.Date(btcusd$Date)
+btcusd$Date
+names(btcusd)[6]<-"Vol"
+btcusd$Vol
+names(btcusd)[7]<-"Change%"
+btcusd$`Change%`
+str(btcusd)
+
+btcusd1=btcusd
+
+btcusd1$`Change%`=convertpercent(btcusd1[,7])
+btcusd1
+btcusd1$Vol=convertvolume1(btcusd1[,6])
+btcusd1
+btcusd1$Open=convertcurrency(btcusd1[,3])
+btcusd1
+btcusd1$Price=convertcurrency(btcusd1[,2])
+btcusd1
+btcusd1$High=convertcurrency(btcusd1[,4])
+btcusd1
+btcusd1$Low=convertcurrency(btcusd1[,5])
+btcusd1
+btcusd=btcusd1
+str(btcusd1)
+summary(btcusd)
+
+##################### ANALYSIS START##################
+
+library(GGally)
+library(corrplot)
+### In this we check the correlation of our IOTA COIN and BTC COIN 
+cor(btcusd$Price,iotausd$Price)
+cor(btcusd[ ,c(-1,-7)],iotausd[ ,c(-1,-7)])
+cor(btcusd[,-1])
+ggpairs(data = btcusd[ ,c(-1,-7,-6)],iotausd[ ,c(-1,-7,-6)])
+
+###creating linear model
+model=lm(iotausd$Price~btcusd$Price)
+summary(model)
+plot(btcusd$Price,iotausd$Price)
+abline(model)
+
+###In this we can predict that the how much the price of that coin go on that day if we 
+###opening price and current price is known to us
+cor(iotausd[,c(-1,-7)])
+model1=lm(High~Price+Open,data = iotausd)
+summary(model1)
+###in this our p value is lower than significance value which means we will regect our null
+###hypothesis and we can say that 
+
+z=ggplot(data =iotausd,aes(x=Price+Open,y=High))+geom_point()+
+  stat_smooth(method = "lm",col="dodgerblue3")+
+  theme(panel.background = element_rect(fill = "white"),axis.line.x = element_line(),
+        axis.line.y = element_line())+
+  ggtitle("line model")
+z
+ggplotly(z)
+###PRIDICTION
+predict(model1,data.frame(Price=0.3484,Open=0.3574))
+View(iotausd1)
+
+
+
+library(plotly)
+library(ggplot2)
+library(quantmod)
+library(dplyr)
+
+
+###TIME SERIES ANALYSIS##########
+
+##for IOTA
+PRICE_IN_USD=iotausd$Price
+DATE=iotausd$Date
+p1=plot_ly(x=DATE,y=PRICE_IN_USD,mode = 'lines',type = 'scatter', 
+           line = list(color ='red', width = 1.5),name = "IOTA",text=paste("IOTA"))%>%
+  layout(title="IOTA USD",yaxis=list(title="PRICE IN USD"),
+         xaxis=list(title="DATE"),showlegend=TRUE)
+p1
+
+##for BTC
+p2=plot_ly(x=btcusd$Date,y=btcusd$Price,mode='lines',type = 'scatter',name = "BTC",
+           text=paste("BTC"))%>% layout(title="BTC USD",xaxis=list(title="DATE")
+                                        ,yaxis=list(title="PRICE IN USD"))
+p2
+subplot(p2, p1,  nrows = 2, margin = 0.05,shareX = TRUE,shareY = FALSE,titleX = TRUE,
+        titleY = TRUE)%>%layout(showlegend=TRUE,title=FALSE,
+                                yaxis=list(automargin=TRUE))
+
+######CANLEESTICK CHART##########
+
+##for iota
+p <- iotausd %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = iotausd$Open, close = iotausd$Price,
+          high = iotausd$High, low = iotausd$Low) %>%
+  layout(title = "IOTA Candlestick Chart")
+p
+l=p%>%add_lines(x=~Date,y=~iotausd$Open,inherit = FALSE)%>%
+  layout(yaxis=list(title="PRICE IN USD"))
+l
+###for btc
+o <- btcusd %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = btcusd$Open, close = btcusd$Price,
+          high = btcusd$High, low = btcusd$Low) %>%
+  layout(title = "BTC Candlestick Chart")
+o
+t=o%>%add_lines(x=~Date,y=btcusd$Open,inherit = FALSE)%>%
+  layout(yaxis=list(title="PRICE IN USD"))
+t
+###for IOTA
+###MONTH IN WHICH IOTA COIN GAIN HIGHEST PRICE
+a1=max(iotausd$Price)
+a1
+a2=filter(iotausd,Price==5.32)
+a2
+iotausd=iotausd1
+a3=filter(iotausd,Date>="2017-12-01" & Date<="2018-01-01")
+a3
+str(iotausd)
+l<- a3 %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = ~Open, close = ~Price,
+          high = ~High, low = ~Low) %>%
+  layout(title = "Maximun price of IOTA",yaxis=list(title="PRICE IN USD"))
+l
+
+
+#What happened on 2017/12/19?
+# Robert Bosch Venture Capital announces its investment into IOTA
+
+
+### Month in which btc coin achive highest price
+b1=max(btcusd$Price)
+b1
+b2=filter(btcusd,Price==19187)
+b2
+str(btcusd)
+btcusd=btcusd1
+b3=filter(btcusd,Date>="2017-12-01" & Date<="2018-01-01")
+b3
+
+y<- b3 %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = ~Open, close = ~Price,
+          high = ~High, low = ~Low) %>%
+  layout(title = "Maximun price of BTC",yaxis=list(title="PRICE IN USD"))
+y
+
+subplot(l, y,  nrows = 2, margin = 0.05,shareX = TRUE,shareY = FALSE,titleX = TRUE,
+        titleY = TRUE)%>%layout(showlegend=FALSE,title=TRUE,
+                                xaxis = list(rangeslider = list(visible = F)))
+
+##MONTH IN WHICH IOTA COIN PRICE IS LOWEST
+a4=min(iotausd$Price)
+a4
+a5=filter(iotausd,Price==0.1582)
+a5
+a6=filter(iotausd,Date>="2017-07-01" & Date<="2017-08-01")
+a6
+r<- a6 %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = ~Open, close = ~Price,
+          high = ~High, low = ~Low) %>%
+  layout(title = "Minimum Price of IOTA ",yaxis=list(title="PRICE IN USD"))
+r
+
+##MONTH IN WHICH BTC COIN PRICE IS LOWEST
+b4=min(btcusd$Price)
+b4
+b5=filter(btcusd,Price==1924.9)
+b5
+b6=filter(btcusd,Date>="2017-07-01" & Date<="2017-08-01")
+b6
+g<- b6 %>%
+  plot_ly(x = ~Date,type="candlestick",
+          open = ~Open, close = ~Price,
+          high = ~High, low = ~Low) %>%
+  layout(title = "Minimum Price of BTC ",yaxis=list(title="PRICE IN USD"))
+g
+
+subplot(r, g,  nrows = 2, margin = 0.05,shareX = TRUE,shareY = FALSE,titleX = TRUE,
+        titleY = TRUE)%>%layout(showlegend=FALSE,title=TRUE,
+                                xaxis = list(rangeslider = list(visible = F)))
+
+#2017 was a fantastic year for bitcoin, which saw growth from 111 to a peak 19,000. 
+#This was also caused by the increasing number of subscriptions to the exchanges of 
+#new users who bought the virtual currency.
+#Many of these users have joined the historic bitcoin owners and more experienced traders. 
+#Who benefited from this situation. 
+#The problem arose when the speculative bubble exploded: in fact the inexperienced 
+#users were caught by the so-called "panic selling".Therefore they sold all bitcoin,
+#and many of them have had significant losses.Bitcoin prices were negatively affected 
+#by several hacks or thefts from cryptocurrency exchanges. For the first six months 
+#of 2018, $ 761 million worth of cryptocurrencies was reported stolen from exchanges.
+
+#*NOTE: Panic selling is a wide-scale selling of an investment which causes a sharp 
+#decline in prices. Specifically, an investor wants to get out of an investment with 
+#little regard of the price obtained. The selling activity is problematic because the
+#investor is selling in reaction to emotion and fear, rather than evaluating the
+#fundamentals.
+
+
+
+####NOW TO PROVE MY POINT#######
+plot_ly(x=iotausd$Price,y=iotausd$Vol,z=iotausd$Date,type = "scatter3d",mode='markers',
+        marker = list(size = 7,color = iotausd$Vol
+                      )) %>%
+  layout(title = 'Price in USD VS Volume',
+         scene=list(yaxis = list(title='VOLUME'),
+                    xaxis = list(title='Price in USD'),
+                    zaxis=list(title='date')))
+
+write.table(iotausd1, file="iotausd2.csv", append =FALSE , sep = ",", dec = ".",
+            row.names = FALSE, col.names = TRUE)
+write.table(btcusd1, file="btcusd2.csv", append =FALSE , sep = ",", dec = ".",
+            row.names = FALSE, col.names = TRUE)
+
+
+
+plot_ly(x=iotausd$Open,y=iotausd$Price,z=iotausd$High,type = "scatter3d",mode='markers',
+        marker = list(size = 7,color = iotausd$Vol
+        )) %>%
+  layout(title = 'Price in USD VS Volume',
+         scene=list(yaxis = list(title='PRICE'),
+                    xaxis = list(title='OPEN'),
+                    zaxis=list(title='HIGH')))
+
+
